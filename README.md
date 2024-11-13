@@ -35,7 +35,7 @@
 > The overall architecture of MotionGS. It can be viewed as two data streams: (1) The 2D data stream utilizes the optical flow decoupling module to obtain the motion flow as the 2D motion prior; (2) The 3D data stream involves the deformation and transformation of Gaussians to render the image for the next frame. During training, we alternately optimize 3DGS and camera poses through the camera pose refinement module.
 
 ## TODO
-- [ ] Release the video demo
+- [x] Release the video demo, watch it in [Youtube](https://www.youtube.com/watch?v=25DgViuuKFI) :rocket:
 - [ ] Release the **MotionGS** code (Full code might be released after the CVPR deadline, stay tuned!)
 
 
