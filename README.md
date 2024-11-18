@@ -25,8 +25,16 @@
  <a href='https://ruijiezhu94.github.io/MotionGS_page/'><img src='https://img.shields.io/badge/Project-Page-Green'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href='https://github.com/RuijieZhu94/MotionGS?tab=MIT-1-ov-file'><img src='https://img.shields.io/badge/License-MIT-blue'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href='https://ruijiezhu94.github.io/MotionGS'><img src="https://visitor-badge.laobi.icu/badge?page_id=ruijiezhu94.motiongs"/></a>
+ <br>
+ <br>
 </div>
 
+
+**[Announcement] We have applied to the PCs of NeurIPS 2024 and ICLR 2025 to investigate a case related to this paper. In order to preserve our evidence, the relevant code and results will only be sent to the investigation team. After the investigation results are announced, we will open source the code for public use.**
+<!-- the case that Figure 4 of ICLR 2025 submission “GAUSSIANFLOW: SPLATTING GAUSSIAN DYNAMICS FOR 4D CONTENT CREATION” is suspected of plagiarizing our Figure 12. And there is evidence that our reviewers are also involved. -->
+
+
+<br>
 
 <p align="center">
 <img src="assets/pipeline.png" width="97%"/>
@@ -36,7 +44,7 @@
 
 ## TODO
 - [x] Release the video demo, watch it in [Youtube](https://www.youtube.com/watch?v=25DgViuuKFI) :rocket:
-- [ ] Release the **MotionGS** code (Full code might be released after the CVPR deadline, stay tuned!)
+- [ ] Release the **MotionGS** code
 
 
 ## Bibtex
