@@ -25,7 +25,7 @@ from core_flow.FlowFormer import build_flowformer
 # from core_flow.GMFlow import GMFlow
 from gmflow.config import get_cfg as get_gmflow_cfg
 from gmflow.gmflow import build_gmflow
-from MDFlow.models.FastFlowNet import FastFlowNet
+# from MDFlow.models.FastFlowNet import FastFlowNet
 from core_depth.MiDaS import MidasNet
 import torch.nn.functional as F
 
