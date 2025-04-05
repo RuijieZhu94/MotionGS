@@ -23,7 +23,7 @@
  <a href='https://arxiv.org/abs/2410.07707'><img src='https://img.shields.io/badge/Paper-arXiv-red'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <!-- <a href='https://arxiv.org/abs/[]'><img src='https://img.shields.io/badge/arXiv-[]-b31b1b.svg'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -->
  <a href='https://ruijiezhu94.github.io/MotionGS_page/'><img src='https://img.shields.io/badge/Project-Page-orange'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- <a href='https://ruijiezhu94.github.io/MotionGS_page/'><img src='https://img.shields.io/badge/YouTube-Demo-yellow'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+ <a href='https://www.youtube.com/embed/25DgViuuKFI'><img src='https://img.shields.io/badge/YouTube-Demo-yellow'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
  <a href='https://github.com/RuijieZhu94/MotionGS?tab=MIT-1-ov-file'><img src='https://img.shields.io/badge/License-MIT-green'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <a href='https://ruijiezhu94.github.io/MotionGS'><img src="https://visitor-badge.laobi.icu/badge?page_id=ruijiezhu94.motiongs"/></a>
  <br>
@@ -95,11 +95,11 @@ expname=NeRF-DS
 scenename=as_novel_view
 mkdir -p output/$expname/$scenename
 
-python train.py \ 
-    -s data/NeRF-DS/$scenename \ 
-    -m output/$expname/$scenename \ 
-    --eval \ 
-    --use_depth_and_flow \ 
+python train.py \
+    -s data/NeRF-DS/$scenename \
+    -m output/$expname/$scenename \
+    --eval \
+    --use_depth_and_flow \
     --optimize_pose
 ```
 
@@ -110,12 +110,12 @@ expname=HyperNerf
 scenename=broom2
 mkdir -p output/$expname/$scenename
 
-python train.py \ 
-    -s data/hypernerf/vrig/$scenename \ 
-    -m output/$expname/$scenename \ 
-    --scene_format nerfies \ 
-    --eval \ 
-    --use_depth_and_flow \ 
+python train.py \
+    -s data/hypernerf/vrig/$scenename \
+    -m output/$expname/$scenename \
+    --scene_format nerfies \
+    --eval \
+    --use_depth_and_flow \
     --optimize_pose
 ```
 
@@ -125,15 +125,14 @@ expname=dynerf
 scenename=flame_steak
 mkdir -p output/$expname/$scenename
 
-python train.py \ 
-    -s data/dynerf/$scenename \ 
-    -m output/$expname/$scenename \ 
-    --scene_format plenopticVideo \ 
-    --resolution 4 \ 
-    --dataloader \ 
-    --eval \ 
-    --use_depth_and_flow \ 
-    --optimize_pose
+python train.py \
+    -s data/dynerf/$scenename \
+    -m output/$expname/$scenename \
+    --scene_format plenopticVideo \
+    --resolution 4 \
+    --dataloader \
+    --eval \
+    --use_depth_and_flow
 ```
 
 ### 🎇 Evaluation 
