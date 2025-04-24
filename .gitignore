@@ -2,13 +2,11 @@
 .vscode
 output
 build
-diff_rasterization/diff_rast.egg-info
-diff_rasterization/dist
+*.egg-info
 tensorboard_3d
 screenshots
 .idea
 data
-submodules
 tmp*
 pretrained_weights
 wandb
