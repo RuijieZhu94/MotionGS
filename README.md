@@ -45,9 +45,8 @@
 ### 🔧 Dataset Preparation
 To train MotionGS, you should download the following dataset:
 * [NeRF-DS](https://jokeryan.github.io/projects/nerf-ds/)
-* [Hyper-NeRF](https://hypernerf.github.io/)
+* [Hyper-NeRF](https://hypernerf.github.io/) (motion mask: [google drive](https://drive.google.com/file/d/1QkuqM7teehy6r9CY3P6p1ffRlwjBU1Mk/view?usp=sharing))
 * [DyNeRF](https://github.com/facebookresearch/Neural_3D_Video)
-
 
 We organize the datasets as follows:
 
