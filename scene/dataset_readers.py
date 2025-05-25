@@ -530,7 +530,7 @@ def readNerfiesCameras(path):
         motion_mask_path = image_path.replace('rgb', 'resized_mask')
         if os.path.exists(motion_mask_path):
             motion_mask = np.array(Image.open(motion_mask_path)).astype(np.uint8)
-            motion_mask = 1 - motion_mask / 255.0
+            motion_mask = motion_mask / 255.0
         else:
             motion_mask = None
 
