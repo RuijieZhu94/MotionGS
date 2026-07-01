@@ -209,8 +209,40 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
         next_proj_2D, next_conic_2D = render_pkg_re_2["proj_2D"], render_pkg_re_2["conic_2D"] 
 
         # warp gs_flow to match motion flow
-        gs_flow = calculate_gs_flow(gs_per_pixel, weight_per_gs_pixel, next_conic_2D, conic_2D_inv, proj_2D, next_proj_2D, x_mu)
-        gs_flow = warping_gs_flow(depth, gs_flow, viewpoint_cam1, viewpoint_cam2)
+        if dataset.use_depth_and_flow:
+            gs_flow = calculate_gs_flow(gs_per_pixel, weight_per_gs_pixel, next_conic_2D, conic_2D_inv, proj_2D, next_proj_2D, x_mu,iteration)
+            gs_flow = warping_gs_flow(depth, gs_flow, viewpoint_cam1, viewpoint_cam2)
+            if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
+                print(f"\n========== Diagnostic @ iter {iteration} ==========")
+                print(f"  d_xyz        : min={d_xyz.min().item() if torch.is_tensor(d_xyz) else d_xyz:.4f}, "
+                      f"max={d_xyz.max().item() if torch.is_tensor(d_xyz) else d_xyz:.4f}, "
+                      f"mean_abs={d_xyz.abs().mean().item() if torch.is_tensor(d_xyz) else 0:.4f}")
+                print(f"  proj_2D      : min={proj_2D.min().item():.3f}, max={proj_2D.max().item():.3f}, "
+                      f"mean_abs={proj_2D.abs().mean().item():.3f}")
+                print(f"  next_proj_2D : min={next_proj_2D.min().item():.3f}, max={next_proj_2D.max().item():.3f}, "
+                      f"mean_abs={next_proj_2D.abs().mean().item():.3f}")
+                print(f"  proj diff    : mean_abs={(next_proj_2D - proj_2D).abs().mean().item():.4f}")
+                print(f"  conic_2D     : min={conic_2D.min().item():.3e}, max={conic_2D.max().item():.3e}, "
+                      f"mean_abs={conic_2D.abs().mean().item():.3e}")
+                print(f"  conic_2D_inv : min={conic_2D_inv.min().item():.3e}, max={conic_2D_inv.max().item():.3e}, "
+                      f"mean_abs={conic_2D_inv.abs().mean().item():.3e}")
+                print(f"  next_conic_2D: min={next_conic_2D.min().item():.3e}, max={next_conic_2D.max().item():.3e}, "
+                      f"mean_abs={next_conic_2D.abs().mean().item():.3e}")
+                print(f"  x_mu         : min={x_mu.min().item():.3f}, max={x_mu.max().item():.3f}, "
+                      f"mean_abs={x_mu.abs().mean().item():.3f}")
+
+            gs_flow = warping_gs_flow(depth, gs_flow, viewpoint_cam1, viewpoint_cam2)
+
+            if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
+                print(f"  gs_flow (after warping)       : min={gs_flow.min().item():.3f}, max={gs_flow.max().item():.3f}, "
+                      f"mean_abs={gs_flow.abs().mean().item():.3f}")
+
+            # 同时打印 motion_flow（GMFlow 给的监督信号）的范围
+            # motion_flow 在后面才计算，这里先 placeholder
+            if iteration % 100 == 0:
+                print(f"[gs_flow @ iter {iteration}] min={gs_flow.min().item():.6f}, max={gs_flow.max().item():.6f}, mean_abs={gs_flow.abs().mean().item():.6f}")
+        else:
+            gs_flow = None
 
         # Loss
         if not dataset.dataloader:
@@ -225,8 +257,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
             wandb.log({"tmp_image1": [wandb.Image(gt_image.permute(1,2,0).cpu().numpy()*255, caption="Iteration: {}".format(iteration))]})
             wandb.log({"tmp_image2": [wandb.Image(next_gt_image.permute(1,2,0).cpu().numpy()*255, caption="Iteration: {}".format(iteration))]})
             wandb.log({"tmp_image_render": [wandb.Image(image.permute(1,2,0).detach().cpu().numpy()*255, caption="Iteration: {}".format(iteration))]})
-            gs_flow_img = flow_to_image(gs_flow.permute(1,2,0).detach().cpu().numpy(), convert_to_bgr=False)
-            wandb.log({"tmp_gs_flow": [wandb.Image(gs_flow_img, caption="Iteration: {}".format(iteration))]})
+            if gs_flow is not None:
+                gs_flow_img = flow_to_image(gs_flow.permute(1,2,0).detach().cpu().numpy(), convert_to_bgr=False)
+                wandb.log({"tmp_gs_flow": [wandb.Image(gs_flow_img, caption="Iteration: {}".format(iteration))]})
 
         H, W = gt_image.shape[-2:]
 
@@ -285,6 +318,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
             with torch.no_grad():
                 camera_flow = calculate_camera_flow(depth, viewpoint_cam1, viewpoint_cam2)
                 motion_flow = flow_2d_gt - camera_flow
+                if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
+                    print(f"  flow_2d_gt   : mean_abs={flow_2d_gt.abs().mean().item():.3f}")
+                    print(f"  camera_flow  : mean_abs={camera_flow.abs().mean().item():.3f}")
+                    print(f"  motion_flow  : mean_abs={motion_flow.abs().mean().item():.3f}")
+                    print(f"========== End diagnostic @ iter {iteration} ==========\n")
                 motion_flow = motion_flow * (1 - motion_mask) if motion_mask is not None else motion_flow
         
             if vis:
