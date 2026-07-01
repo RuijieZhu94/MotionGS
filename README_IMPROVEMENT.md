@@ -1,112 +1,50 @@
-\# MotionGS — Improvement Branch
+# MotionGS Improvement Notes
 
+This branch corresponds to the course project **Reproduction and Stability Enhancement of MotionGS**.
 
+## Summary of Improvements
 
-This branch corresponds to the course project:
+### Improvement A: Isotropic Gaussian Flow
 
-\*\*"Reproduction and Stability Enhancement of MotionGS"\*\*
+The anisotropic Gaussian-flow formula can become unstable around the warm-up boundary on newer PyTorch/CUDA stacks. The flow calculation in `utils/flow_utils.py` now uses isotropic center displacement between projected Gaussian centers and aggregates it with the rasterizer weights.
 
+### Improvement B: Optional Delayed Pose Refinement
 
+`train.py` supports delaying pose refinement until 50% of the total training iterations via `--delayed_pose_refine`. This is optional because the project experiments found it could reduce PSNR on some scenes.
 
-\## Summary of Improvements
+### Windows Path Compatibility
 
+`scene/dataset_readers.py` now derives the Nerfies scene name with `os.path.normpath`, so both Windows and POSIX-style paths are handled consistently, including paths with trailing separators.
 
+## Environment Used for Reproduction
 
-\### Improvement A — Isotropic Gaussian Flow (Section 5.1 of report)
+- Python 3.10
+- PyTorch 2.4.0 with CUDA 12.4
+- Windows 11, RTX 4060 Laptop 8 GB
 
-The original anisotropic Gaussian-flow formula suffers from catastrophic
+## Reproduce
 
-cancellation at the warm-up boundary under modern hardware (PyTorch 2.4 +
-
-CUDA 12.4 + RTX 4060). We replace it with an isotropic centre-displacement
-
-formulation in `utils/flow\_utils.py`, restoring training stability and
-
-achieving PSNR 29.04 dB vs. 7.71 dB (collapsed original).
-
-
-
-\### Improvement B — Delayed Pose-Refinement Activation (Section 5.2 of report)
-
-Modified `train.py` to postpone pose-refinement from iteration 3000 to 50%
-
-of total iterations. Hypothesis was disproved: degraded PSNR by 0.7–2.2 dB.
-
-Analysis in Section 7.1 of report.
-
-
-
-\### Windows Compatibility Fixes
-
-\- Path handling fix in `scene/dataset\_readers.py`
-
-\- Backward CUDA kernel illegal memory access fix
-
-\- Rasterizer antialiasing constructor argument fix
-
-
-
-\## Environment
-
-\- Python 3.10
-
-\- PyTorch 2.4.0 + CUDA 12.4
-
-\- Windows 11, RTX 4060 Laptop 8GB
-
-
-
-\## Reproduce
-
-
-
-\### Baseline (Deformable 3DGS, no flow)
+### Baseline: Deformable 3DGS, No Flow
 
 ```bash
-
-python train.py -s data/plate \\
-
-&#x20; --densify\_until\_iter 9000 \\
-
-&#x20; --densify\_grad\_threshold 0.0003
-
+python train.py -s data/plate \
+  --densify_until_iter 9000 \
+  --densify_grad_threshold 0.0003
 ```
 
-
-
-\### Improvement A (isotropic flow)
+### Isotropic Flow
 
 ```bash
-
-python train.py -s data/plate --use\_depth\_and\_flow \\
-
-&#x20; --use\_isotropic\_flow \\
-
-&#x20; --densify\_until\_iter 9000 \\
-
-&#x20; --densify\_grad\_threshold 0.0003
-
+python train.py -s data/plate --use_depth_and_flow \
+  --densify_until_iter 9000 \
+  --densify_grad_threshold 0.0003
 ```
 
-
-
-\### Improvement B (delayed pose refinement)
+### Delayed Pose Refinement
 
 ```bash
-
-python train.py -s data/plate --use\_depth\_and\_flow \\
-
-&#x20; --delayed\_pose\_refine \\
-
-&#x20; --densify\_until\_iter 9000 \\
-
-&#x20; --densify\_grad\_threshold 0.0003
-
+python train.py -s data/plate --use_depth_and_flow --optimize_pose \
+  --delayed_pose_refine \
+  --densify_until_iter 9000 \
+  --densify_grad_threshold 0.0003
 ```
-
-
-
-\## Experiment Logs
-
-See `logs/` directory for per-iteration diagnostics and VRAM usage data.
-

@@ -473,7 +473,7 @@ def readNerfiesCameras(path):
     coord_scale = scene_json['scale']
     scene_center = scene_json['center']
 
-    name = path.replace('\\', '/').split('/')[-1]
+    name = os.path.basename(os.path.normpath(path))
     if name.startswith('vrig'):
         train_img = dataset_json['train_ids']
         val_img = dataset_json['val_ids']

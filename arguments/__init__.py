@@ -88,6 +88,7 @@ class OptimizationParams(ParamGroup):
     def __init__(self, parser):
         self.iterations = 20_000
         self.warm_up = 3_000
+        self.delayed_pose_refine = False
         self.position_lr_init = 0.00016
         self.position_lr_final = 0.0000016
         self.position_lr_delay_mult = 0.01

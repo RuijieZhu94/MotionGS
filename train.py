@@ -131,6 +131,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
     best_iteration = 0
     progress_bar = tqdm(range(opt.iterations), desc="Training progress")
     smooth_term = get_linear_noise_func(lr_init=0.1, lr_final=1e-15, lr_delay_mult=0.01, max_steps=20000)
+    if opt.delayed_pose_refine:
+        pose_refine_start_iter = max(opt.warm_up, opt.iterations // 2)
+    else:
+        pose_refine_start_iter = opt.warm_up
 
     if dataset.dataloader:
         training_dataset = scene.getTrainCameraDataset()   
@@ -208,39 +212,18 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
         render_pkg_re_2 = render(viewpoint_cam2, gaussians, pipe, background, d_xyz_2, d_rotation_2, d_scaling_2, dataset.is_6dof)
         next_proj_2D, next_conic_2D = render_pkg_re_2["proj_2D"], render_pkg_re_2["conic_2D"] 
 
-        # warp gs_flow to match motion flow
+        # Warp Gaussian flow to match motion flow.
         if dataset.use_depth_and_flow:
-            gs_flow = calculate_gs_flow(gs_per_pixel, weight_per_gs_pixel, next_conic_2D, conic_2D_inv, proj_2D, next_proj_2D, x_mu,iteration)
+            gs_flow = calculate_gs_flow(
+                gs_per_pixel,
+                weight_per_gs_pixel,
+                next_conic_2D,
+                conic_2D_inv,
+                proj_2D,
+                next_proj_2D,
+                x_mu,
+            )
             gs_flow = warping_gs_flow(depth, gs_flow, viewpoint_cam1, viewpoint_cam2)
-            if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
-                print(f"\n========== Diagnostic @ iter {iteration} ==========")
-                print(f"  d_xyz        : min={d_xyz.min().item() if torch.is_tensor(d_xyz) else d_xyz:.4f}, "
-                      f"max={d_xyz.max().item() if torch.is_tensor(d_xyz) else d_xyz:.4f}, "
-                      f"mean_abs={d_xyz.abs().mean().item() if torch.is_tensor(d_xyz) else 0:.4f}")
-                print(f"  proj_2D      : min={proj_2D.min().item():.3f}, max={proj_2D.max().item():.3f}, "
-                      f"mean_abs={proj_2D.abs().mean().item():.3f}")
-                print(f"  next_proj_2D : min={next_proj_2D.min().item():.3f}, max={next_proj_2D.max().item():.3f}, "
-                      f"mean_abs={next_proj_2D.abs().mean().item():.3f}")
-                print(f"  proj diff    : mean_abs={(next_proj_2D - proj_2D).abs().mean().item():.4f}")
-                print(f"  conic_2D     : min={conic_2D.min().item():.3e}, max={conic_2D.max().item():.3e}, "
-                      f"mean_abs={conic_2D.abs().mean().item():.3e}")
-                print(f"  conic_2D_inv : min={conic_2D_inv.min().item():.3e}, max={conic_2D_inv.max().item():.3e}, "
-                      f"mean_abs={conic_2D_inv.abs().mean().item():.3e}")
-                print(f"  next_conic_2D: min={next_conic_2D.min().item():.3e}, max={next_conic_2D.max().item():.3e}, "
-                      f"mean_abs={next_conic_2D.abs().mean().item():.3e}")
-                print(f"  x_mu         : min={x_mu.min().item():.3f}, max={x_mu.max().item():.3f}, "
-                      f"mean_abs={x_mu.abs().mean().item():.3f}")
-
-            gs_flow = warping_gs_flow(depth, gs_flow, viewpoint_cam1, viewpoint_cam2)
-
-            if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
-                print(f"  gs_flow (after warping)       : min={gs_flow.min().item():.3f}, max={gs_flow.max().item():.3f}, "
-                      f"mean_abs={gs_flow.abs().mean().item():.3f}")
-
-            # 同时打印 motion_flow（GMFlow 给的监督信号）的范围
-            # motion_flow 在后面才计算，这里先 placeholder
-            if iteration % 100 == 0:
-                print(f"[gs_flow @ iter {iteration}] min={gs_flow.min().item():.6f}, max={gs_flow.max().item():.6f}, mean_abs={gs_flow.abs().mean().item():.6f}")
         else:
             gs_flow = None
 
@@ -318,11 +301,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
             with torch.no_grad():
                 camera_flow = calculate_camera_flow(depth, viewpoint_cam1, viewpoint_cam2)
                 motion_flow = flow_2d_gt - camera_flow
-                if iteration in [2900, 2950, 3000, 3050, 3100, 3150, 3200, 3300, 3500]:
-                    print(f"  flow_2d_gt   : mean_abs={flow_2d_gt.abs().mean().item():.3f}")
-                    print(f"  camera_flow  : mean_abs={camera_flow.abs().mean().item():.3f}")
-                    print(f"  motion_flow  : mean_abs={motion_flow.abs().mean().item():.3f}")
-                    print(f"========== End diagnostic @ iter {iteration} ==========\n")
                 motion_flow = motion_flow * (1 - motion_mask) if motion_mask is not None else motion_flow
         
             if vis:
@@ -433,7 +411,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
                 # scale_shift.optimizer.zero_grad()
         
         #  Alternate pose optimization
-        if dataset.optimize_pose and iteration >= opt.warm_up:
+        if dataset.optimize_pose and iteration >= pose_refine_start_iter:
             opt_params = []
             opt_params.append(
                 {
@@ -450,15 +428,21 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations):
                 }
             )
             pose_optimizer = torch.optim.Adam(opt_params)
-            # use updated deformation field (and gaussians)
-            if iteration < opt.warm_up:
-                d_xyz, d_rotation, d_scaling = 0.0, 0.0, 0.0
+            # Use the updated deformation field and Gaussians.
+            N = gaussians.get_xyz.shape[0]
+            time_input_1 = fid1.unsqueeze(0).expand(N, -1)
+            if dataset.is_blender:
+                ast_noise = 0
             else:
-                N = gaussians.get_xyz.shape[0]
-                time_input_1 = fid1.unsqueeze(0).expand(N, -1)
-                ast_noise = 0 if dataset.is_blender else torch.randn(1, 1, device='cuda').expand(N, -1) * time_interval * smooth_term(iteration)
-                d_xyz, d_rotation, d_scaling = deform.step(gaussians.get_xyz.detach(), time_input_1 + ast_noise)
-            
+                ast_noise = (
+                    torch.randn(1, 1, device='cuda').expand(N, -1)
+                    * time_interval
+                    * smooth_term(iteration)
+                )
+            d_xyz, d_rotation, d_scaling = deform.step(
+                gaussians.get_xyz.detach(), time_input_1 + ast_noise
+            )
+
             render_pkg_re = render_w_pose(viewpoint_cam1, gaussians, pipe, background, d_xyz.detach(), d_rotation.detach(), d_scaling.detach(), False)
             image, depth, opacity = (
                 render_pkg_re["render"],
